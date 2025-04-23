@@ -17,6 +17,8 @@
 #include "duckdb/parser/parsed_data/load_info.hpp"
 #include "duckdb/parser/parsed_data/update_extensions_info.hpp"
 #include "duckdb/parser/parsed_data/pragma_info.hpp"
+#include "duckdb/parser/parsed_data/sequence_value_info.hpp"
+#include "duckdb/parser/parsed_data/table_data_info.hpp"
 #include "duckdb/parser/parsed_data/transaction_info.hpp"
 #include "duckdb/parser/parsed_data/vacuum_info.hpp"
 #include "duckdb/parser/parsed_data/exported_table_data.hpp"
@@ -66,6 +68,21 @@ unique_ptr<ParseInfo> ParseInfo::Deserialize(Deserializer &deserializer) {
 		break;
 	case ParseInfoType::VACUUM_INFO:
 		result = VacuumInfo::Deserialize(deserializer);
+		break;
+	case ParseInfoType::SEQUENCE_VALUE_INFO:
+		result = SequenceValueInfo::Deserialize(deserializer);
+		break;
+	case ParseInfoType::TABLE_DATA_INFO:
+		result = TableDataInfo::Deserialize(deserializer);
+		break;
+	case ParseInfoType::INSERT_INFO:
+		result = InsertInfo::Deserialize(deserializer);
+		break;
+	case ParseInfoType::DELETE_INFO:
+		result = DeleteInfo::Deserialize(deserializer);
+		break;
+	case ParseInfoType::UPDATE_INFO:
+		result = UpdateInfo::Deserialize(deserializer);
 		break;
 	default:
 		throw SerializationException("Unsupported type for deserialization of ParseInfo!");
@@ -627,6 +644,63 @@ unique_ptr<ParseInfo> VacuumInfo::Deserialize(Deserializer &deserializer) {
 	deserializer.ReadPropertyWithDefault<bool>(201, "has_table", result->has_table);
 	deserializer.ReadPropertyWithDefault<unique_ptr<TableRef>>(202, "ref", result->ref);
 	deserializer.ReadPropertyWithDefault<vector<string>>(203, "columns", result->columns);
+	return std::move(result);
+}
+
+void TableDataInfo::Serialize(Serializer &serializer) const {
+	ParseInfo::Serialize(serializer);
+	serializer.WriteProperty(100, "schema", schema);
+	serializer.WriteProperty(101, "name", name);
+}
+
+unique_ptr<ParseInfo> TableDataInfo::Deserialize(Deserializer &deserializer) {
+	auto result = make_uniq<TableDataInfo>();
+	result->schema = deserializer.ReadProperty<string>(100, "schema");
+	result->name = deserializer.ReadProperty<string>(101, "name");
+	return std::move(result);
+}
+
+void InsertInfo::Serialize(Serializer &serializer) const {
+	TableDataInfo::Serialize(serializer);
+	serializer.WriteObject(102, "chunk", [&](Serializer &serializer) { chunk->Serialize(serializer); });
+}
+
+unique_ptr<ParseInfo> InsertInfo::Deserialize(Deserializer &deserializer) {
+	auto result = make_uniq<InsertInfo>();
+	result->schema = deserializer.ReadProperty<string>(100, "schema");
+	result->name = deserializer.ReadProperty<string>(101, "name");
+	result->chunk = make_uniq<DataChunk>();
+	deserializer.ReadObject(102, "chunk", [&](Deserializer &deserializer) { result->chunk->Deserialize(deserializer); });
+	return std::move(result);
+}
+
+void DeleteInfo::Serialize(Serializer &serializer) const {
+	TableDataInfo::Serialize(serializer);
+	serializer.WriteObject(102, "chunk", [&](Serializer &serializer) { chunk->Serialize(serializer); });
+}
+
+unique_ptr<ParseInfo> DeleteInfo::Deserialize(Deserializer &deserializer) {
+	auto result = make_uniq<DeleteInfo>();
+	result->schema = deserializer.ReadProperty<string>(100, "schema");
+	result->name = deserializer.ReadProperty<string>(101, "name");
+	result->chunk = make_uniq<DataChunk>();
+	deserializer.ReadObject(102, "chunk", [&](Deserializer &deserializer) { result->chunk->Deserialize(deserializer); });
+	return std::move(result);
+}
+
+void UpdateInfo::Serialize(Serializer &serializer) const {
+	TableDataInfo::Serialize(serializer);
+	serializer.WriteProperty(102, "column_indexes", column_indexes);
+	serializer.WriteObject(103, "chunk", [&](Serializer &serializer) { chunk->Serialize(serializer); });
+}
+
+unique_ptr<ParseInfo> UpdateInfo::Deserialize(Deserializer &deserializer) {
+	auto result = make_uniq<UpdateInfo>();
+	result->schema = deserializer.ReadProperty<string>(100, "schema");
+	result->name = deserializer.ReadProperty<string>(101, "name");
+	result->column_indexes = deserializer.ReadProperty<vector<column_t>>(102, "column_indexes");
+	result->chunk = make_uniq<DataChunk>();
+	deserializer.ReadObject(103, "chunk", [&](Deserializer &deserializer) { result->chunk->Deserialize(deserializer); });
 	return std::move(result);
 }
 

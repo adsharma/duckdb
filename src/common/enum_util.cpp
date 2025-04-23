@@ -2818,19 +2818,28 @@ const StringUtil::EnumStringLiteral *GetParseInfoTypeValues() {
 		{ static_cast<uint32_t>(ParseInfoType::COMMENT_ON_INFO), "COMMENT_ON_INFO" },
 		{ static_cast<uint32_t>(ParseInfoType::COMMENT_ON_COLUMN_INFO), "COMMENT_ON_COLUMN_INFO" },
 		{ static_cast<uint32_t>(ParseInfoType::COPY_DATABASE_INFO), "COPY_DATABASE_INFO" },
-		{ static_cast<uint32_t>(ParseInfoType::UPDATE_EXTENSIONS_INFO), "UPDATE_EXTENSIONS_INFO" }
+		{ static_cast<uint32_t>(ParseInfoType::UPDATE_EXTENSIONS_INFO), "UPDATE_EXTENSIONS_INFO" },
+		{ static_cast<uint32_t>(ParseInfoType::SEQUENCE_VALUE_INFO), "SEQUENCE_VALUE_INFO" },
+		{ static_cast<uint32_t>(ParseInfoType::TABLE_DATA_INFO), "TABLE_DATA_INFO" },
+		{ static_cast<uint32_t>(ParseInfoType::INSERT_INFO), "INSERT_INFO" },
+		{ static_cast<uint32_t>(ParseInfoType::DELETE_INFO), "DELETE_INFO" },
+		{ static_cast<uint32_t>(ParseInfoType::UPDATE_INFO), "UPDATE_INFO" },
+		{ static_cast<uint32_t>(ParseInfoType::VERSION_INFO), "VERSION_INFO" },
+		{ static_cast<uint32_t>(ParseInfoType::FLUSH_INFO), "FLUSH_INFO" },
+		{ static_cast<uint32_t>(ParseInfoType::ROW_GROUP_DATA_INFO), "ROW_GROUP_DATA_INFO" },
+		{ static_cast<uint32_t>(ParseInfoType::CHECKPOINT_INFO), "CHECKPOINT_INFO" }
 	};
 	return values;
 }
 
 template<>
 const char* EnumUtil::ToChars<ParseInfoType>(ParseInfoType value) {
-	return StringUtil::EnumToString(GetParseInfoTypeValues(), 17, "ParseInfoType", static_cast<uint32_t>(value));
+	return StringUtil::EnumToString(GetParseInfoTypeValues(), static_cast<uint32_t>(ParseInfoType::PARSE_INFO_COUNT), "ParseInfoType", static_cast<uint32_t>(value));
 }
 
 template<>
 ParseInfoType EnumUtil::FromString<ParseInfoType>(const char *value) {
-	return static_cast<ParseInfoType>(StringUtil::StringToEnum(GetParseInfoTypeValues(), 17, "ParseInfoType", value));
+	return static_cast<ParseInfoType>(StringUtil::StringToEnum(GetParseInfoTypeValues(), static_cast<uint32_t>(ParseInfoType::PARSE_INFO_COUNT), "ParseInfoType", value));
 }
 
 const StringUtil::EnumStringLiteral *GetParserExtensionResultTypeValues() {
