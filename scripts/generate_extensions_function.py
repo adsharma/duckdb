@@ -902,7 +902,8 @@ static constexpr const char *AUTOLOADABLE_EXTENSIONS[] = {
     "ui"
 }; // END_OF_AUTOLOADABLE_EXTENSIONS
 
-} // namespace duckdb"""
+} // namespace duckdb
+"""
 
     data.verify_export()
 
