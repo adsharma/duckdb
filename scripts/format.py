@@ -16,7 +16,7 @@ from format_test_benchmark import format_file_content
 def check_formatter_version(command, version_key, min_version, install_instruction):
     try:
         output = subprocess.check_output(command, text=True).strip()
-        # Extract version number for clang-format (e.g., "11.0.1" from "clang-format version 11.0.1...")
+        # Extract version number for clang-format (e.g., "20.0.3" from "clang-format version 20.0.3...")
         if command[0] == "clang-format":
             version = output.split()[2].split(".")[0]
         elif command[0] == "black":
@@ -267,7 +267,7 @@ def main():
     check_only = args.check or not args.fix
     format_all = args.all
 
-    check_formatter_version(["clang-format", "--version"], "11.", 11, "`pip install clang-format==11.0.1`")
+    check_formatter_version(["clang-format", "--version"], "20.", 20, "`pip install clang-format==20.0.3`")
     check_formatter_version(["black", "--version"], "black", 24, '`pip install "black>=24"`')
     check_formatter_version(["cmake-format", "--version"], None, 0, "`pip install cmake-format`")
     # Collect files to format
