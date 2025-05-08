@@ -209,6 +209,8 @@ static void InitializeConnectionMethods(py::class_<DuckDBPyConnection, shared_pt
 	      py::arg("rows_per_batch") = 1000000);
 	m.def("fetch_record_batch", &DuckDBPyConnection::FetchRecordBatchReader,
 	      "Fetch an Arrow RecordBatchReader following execute()", py::arg("rows_per_batch") = 1000000);
+	m.def("to_record_batch", &DuckDBPyConnection::ToRecordBatch, "Convert a DataChunk to a pyarrow RecordBatch",
+	      py::arg("chunk"));
 	m.def("torch", &DuckDBPyConnection::FetchPyTorch, "Fetch a result as dict of PyTorch Tensors following execute()");
 	m.def("tf", &DuckDBPyConnection::FetchTF, "Fetch a result as dict of TensorFlow Tensors following execute()");
 	m.def("begin", &DuckDBPyConnection::Begin, "Start a new transaction");
@@ -2332,6 +2334,15 @@ PyArrowObjectType DuckDBPyConnection::GetArrowType(const py::handle &obj) {
 
 bool DuckDBPyConnection::IsAcceptedArrowObject(const py::object &object) {
 	return DuckDBPyConnection::GetArrowType(object) != PyArrowObjectType::Invalid;
+}
+
+// From python_udf.cpp
+py::object ConvertToRecordBatch(DataChunk &input, ClientProperties &options, ClientContext &context);
+
+py::object DuckDBPyConnection::ToRecordBatch(DataChunk &input) {
+	auto &context = con.GetConnection().context;
+	auto options = context->GetClientProperties();
+	return ConvertToRecordBatch(input, options, *context);
 }
 
 } // namespace duckdb
