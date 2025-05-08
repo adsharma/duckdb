@@ -312,6 +312,9 @@ public:
 
 	py::list FetchMany(idx_t size);
 
+	// Convert DataChunk to pyarrow RecordBatch
+	py::object ToRecordBatch(DataChunk &chunk);
+
 	py::list FetchAll();
 
 	py::dict FetchNumpy();
