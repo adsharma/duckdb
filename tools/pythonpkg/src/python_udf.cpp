@@ -518,6 +518,27 @@ public:
 
 } // namespace
 
+// Exported function similar to ConvertToSingleBatch
+py::object ConvertToRecordBatch(DataChunk &input, ClientProperties &options, ClientContext &context) {
+       auto types = input.GetTypes();
+       vector<string> names;
+       names.reserve(types.size());
+       for (idx_t i = 0; i < types.size(); i++) {
+               names.push_back(StringUtil::Format("c%d", i));
+       }
+       ArrowSchema schema;
+       ArrowConverter::ToArrowSchema(&schema, types, names, options);
+
+       py::list single_batch;
+       ArrowAppender appender(types, STANDARD_VECTOR_SIZE, options,
+                              ArrowTypeExtensionData::GetExtensionTypes(context, types));
+       appender.Append(input, 0, input.size(), input.size());
+       auto array = appender.Finalize();
+       TransformDuckToArrowChunk(schema, array, single_batch);
+       return single_batch[0];
+}
+
+
 ScalarFunction DuckDBPyConnection::CreateScalarUDF(const string &name, const py::function &udf,
                                                    const py::object &parameters,
                                                    const shared_ptr<DuckDBPyType> &return_type, bool vectorized,
