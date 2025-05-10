@@ -47,6 +47,7 @@ struct ParseInfo {
 	}
 
 	ParseInfoType info_type;
+	size_t size = 0;
 
 public:
 	template <class TARGET>
