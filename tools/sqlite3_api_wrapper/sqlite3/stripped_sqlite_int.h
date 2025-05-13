@@ -31,7 +31,7 @@ void *sqlite3_free(void *ptr);
 
 #define ArraySize(X)   ((int)(sizeof(X) / sizeof(X[0])))
 #define LARGEST_INT64  (0xffffffff | (((i64)0x7fffffff) << 32))
-#define SMALLEST_INT64 (((i64)-1) - LARGEST_INT64)
+#define SMALLEST_INT64 (((i64) - 1) - LARGEST_INT64)
 
 #include <assert.h>
 
