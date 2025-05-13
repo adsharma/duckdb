@@ -2,17 +2,6 @@ name: CIFuzz
 on:
   workflow_dispatch:
   repository_dispatch:
-  push:
-    branches-ignore:
-      - 'main'
-      - 'feature'
-      - 'v*.*-*'
-    paths-ignore:
-      - '**.md'
-      - 'tools/**'
-      - '.github/patches/duckdb-wasm/**'
-      - '.github/workflows/**'
-      - '!.github/workflows/cifuzz.yml'
 
 
 concurrency:
