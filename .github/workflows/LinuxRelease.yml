@@ -16,28 +16,6 @@ on:
         type: string
       skip_tests:
         type: string
-  push:
-    branches-ignore:
-      - 'main'
-      - 'feature'
-      - 'v*.*-*'
-    paths-ignore:
-      - '**.md'
-      - 'tools/**'
-      - '!tools/shell/**'
-      - '.github/patches/duckdb-wasm/**'
-      - '.github/workflows/**'
-      - '!.github/workflows/LinuxRelease.yml'
-  merge_group:
-  pull_request:
-    types: [opened, reopened, ready_for_review]
-    paths-ignore:
-      - '**.md'
-      - 'tools/**'
-      - '!tools/shell/**'
-      - '.github/patches/duckdb-wasm/**'
-      - '.github/workflows/**'
-      - '!.github/workflows/LinuxRelease.yml'
 
 
 concurrency:
@@ -309,7 +287,7 @@ jobs:
         python scripts/generate_extensions_function.py
         pip install "black>=24"
         pip install cmake-format
-        pip install "clang_format==11.0.1"
+        pip install "clang_format==20.1.4"
         make format-fix
 
     - uses: actions/upload-artifact@v4

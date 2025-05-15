@@ -392,13 +392,13 @@ typedef struct {
 //! data chunk lives, i.e., must not be destroyed.
 typedef struct _duckdb_vector {
 	void *internal_ptr;
-} * duckdb_vector;
+} *duckdb_vector;
 
 //! A selection vector is a possibly duplicative vector of indices, which refer to values in a vector.
 //! The resulting vector is make up of the values at each index in the selection vector.
 typedef struct _duckdb_selection_vector {
 	void *internal_ptr;
-} * duckdb_selection_vector;
+} *duckdb_selection_vector;
 
 //===--------------------------------------------------------------------===//
 // Types (explicit freeing/destroying)
@@ -456,86 +456,86 @@ typedef struct {
 //! A database instance cache object. Must be destroyed with `duckdb_destroy_instance_cache`.
 typedef struct _duckdb_instance_cache {
 	void *internal_ptr;
-} * duckdb_instance_cache;
+} *duckdb_instance_cache;
 
 //! A database object. Must be closed with `duckdb_close`.
 typedef struct _duckdb_database {
 	void *internal_ptr;
-} * duckdb_database;
+} *duckdb_database;
 
 //! A connection to a duckdb database. Must be closed with `duckdb_disconnect`.
 typedef struct _duckdb_connection {
 	void *internal_ptr;
-} * duckdb_connection;
+} *duckdb_connection;
 
 //! A client context of a duckdb connection. Must be destroyed with `duckdb_destroy_context`.
 typedef struct _duckdb_client_context {
 	void *internal_ptr;
-} * duckdb_client_context;
+} *duckdb_client_context;
 
 //! A prepared statement is a parameterized query that allows you to bind parameters to it.
 //! Must be destroyed with `duckdb_destroy_prepare`.
 typedef struct _duckdb_prepared_statement {
 	void *internal_ptr;
-} * duckdb_prepared_statement;
+} *duckdb_prepared_statement;
 
 //! Extracted statements. Must be destroyed with `duckdb_destroy_extracted`.
 typedef struct _duckdb_extracted_statements {
 	void *internal_ptr;
-} * duckdb_extracted_statements;
+} *duckdb_extracted_statements;
 
 //! The pending result represents an intermediate structure for a query that is not yet fully executed.
 //! Must be destroyed with `duckdb_destroy_pending`.
 typedef struct _duckdb_pending_result {
 	void *internal_ptr;
-} * duckdb_pending_result;
+} *duckdb_pending_result;
 
 //! The appender enables fast data loading into DuckDB.
 //! Must be destroyed with `duckdb_appender_destroy`.
 typedef struct _duckdb_appender {
 	void *internal_ptr;
-} * duckdb_appender;
+} *duckdb_appender;
 
 //! The table description allows querying info about the table.
 //! Must be destroyed with `duckdb_table_description_destroy`.
 typedef struct _duckdb_table_description {
 	void *internal_ptr;
-} * duckdb_table_description;
+} *duckdb_table_description;
 
 //! Can be used to provide start-up options for the DuckDB instance.
 //! Must be destroyed with `duckdb_destroy_config`.
 typedef struct _duckdb_config {
 	void *internal_ptr;
-} * duckdb_config;
+} *duckdb_config;
 
 //! Holds an internal logical type.
 //! Must be destroyed with `duckdb_destroy_logical_type`.
 typedef struct _duckdb_logical_type {
 	void *internal_ptr;
-} * duckdb_logical_type;
+} *duckdb_logical_type;
 
 //! Holds extra information used when registering a custom logical type.
 //! Reserved for future use.
 typedef struct _duckdb_create_type_info {
 	void *internal_ptr;
-} * duckdb_create_type_info;
+} *duckdb_create_type_info;
 
 //! Contains a data chunk from a duckdb_result.
 //! Must be destroyed with `duckdb_destroy_data_chunk`.
 typedef struct _duckdb_data_chunk {
 	void *internal_ptr;
-} * duckdb_data_chunk;
+} *duckdb_data_chunk;
 
 //! Holds a DuckDB value, which wraps a type.
 //! Must be destroyed with `duckdb_destroy_value`.
 typedef struct _duckdb_value {
 	void *internal_ptr;
-} * duckdb_value;
+} *duckdb_value;
 
 //! Holds a recursive tree that matches the query plan.
 typedef struct _duckdb_profiling_info {
 	void *internal_ptr;
-} * duckdb_profiling_info;
+} *duckdb_profiling_info;
 
 //===--------------------------------------------------------------------===//
 // C API Extension info
@@ -544,7 +544,7 @@ typedef struct _duckdb_profiling_info {
 //! Holds state during the C API extension intialization process
 typedef struct _duckdb_extension_info {
 	void *internal_ptr;
-} * duckdb_extension_info;
+} *duckdb_extension_info;
 
 //===--------------------------------------------------------------------===//
 // Function types
@@ -554,13 +554,13 @@ typedef struct _duckdb_extension_info {
 //! When setting this info, it is necessary to pass a destroy-callback function.
 typedef struct _duckdb_function_info {
 	void *internal_ptr;
-} * duckdb_function_info;
+} *duckdb_function_info;
 
 //! The bind info of a function.
 //! When setting this info, it is necessary to pass a destroy-callback function.
 typedef struct _duckdb_bind_info {
 	void *internal_ptr;
-} * duckdb_bind_info;
+} *duckdb_bind_info;
 
 //===--------------------------------------------------------------------===//
 // Scalar function types
@@ -569,12 +569,12 @@ typedef struct _duckdb_bind_info {
 //! A scalar function. Must be destroyed with `duckdb_destroy_scalar_function`.
 typedef struct _duckdb_scalar_function {
 	void *internal_ptr;
-} * duckdb_scalar_function;
+} *duckdb_scalar_function;
 
 //! A scalar function set. Must be destroyed with `duckdb_destroy_scalar_function_set`.
 typedef struct _duckdb_scalar_function_set {
 	void *internal_ptr;
-} * duckdb_scalar_function_set;
+} *duckdb_scalar_function_set;
 
 //! The bind function of the scalar function.
 typedef void (*duckdb_scalar_function_bind_t)(duckdb_bind_info info);
@@ -588,17 +588,17 @@ typedef void (*duckdb_scalar_function_t)(duckdb_function_info info, duckdb_data_
 //! An aggregate function. Must be destroyed with `duckdb_destroy_aggregate_function`.
 typedef struct _duckdb_aggregate_function {
 	void *internal_ptr;
-} * duckdb_aggregate_function;
+} *duckdb_aggregate_function;
 
 //! A aggregate function set. Must be destroyed with `duckdb_destroy_aggregate_function_set`.
 typedef struct _duckdb_aggregate_function_set {
 	void *internal_ptr;
-} * duckdb_aggregate_function_set;
+} *duckdb_aggregate_function_set;
 
 //! Aggregate state
 typedef struct _duckdb_aggregate_state {
 	void *internal_ptr;
-} * duckdb_aggregate_state;
+} *duckdb_aggregate_state;
 
 //! Returns the aggregate state size
 typedef idx_t (*duckdb_aggregate_state_size)(duckdb_function_info info);
@@ -623,12 +623,12 @@ typedef void (*duckdb_aggregate_finalize_t)(duckdb_function_info info, duckdb_ag
 //! A table function. Must be destroyed with `duckdb_destroy_table_function`.
 typedef struct _duckdb_table_function {
 	void *internal_ptr;
-} * duckdb_table_function;
+} *duckdb_table_function;
 
 //! Additional function init info. When setting this info, it is necessary to pass a destroy-callback function.
 typedef struct _duckdb_init_info {
 	void *internal_ptr;
-} * duckdb_init_info;
+} *duckdb_init_info;
 
 //! The bind function of the table function.
 typedef void (*duckdb_table_function_bind_t)(duckdb_bind_info info);
@@ -646,7 +646,7 @@ typedef void (*duckdb_table_function_t)(duckdb_function_info info, duckdb_data_c
 //! A cast function. Must be destroyed with `duckdb_destroy_cast_function`.
 typedef struct _duckdb_cast_function {
 	void *internal_ptr;
-} * duckdb_cast_function;
+} *duckdb_cast_function;
 
 typedef bool (*duckdb_cast_function_t)(duckdb_function_info info, idx_t count, duckdb_vector input,
                                        duckdb_vector output);
@@ -658,7 +658,7 @@ typedef bool (*duckdb_cast_function_t)(duckdb_function_info info, idx_t count, d
 //! Additional replacement scan info. When setting this info, it is necessary to pass a destroy-callback function.
 typedef struct _duckdb_replacement_scan_info {
 	void *internal_ptr;
-} * duckdb_replacement_scan_info;
+} *duckdb_replacement_scan_info;
 
 //! A replacement scan function that can be added to a database.
 typedef void (*duckdb_replacement_callback_t)(duckdb_replacement_scan_info info, const char *table_name, void *data);
@@ -670,22 +670,22 @@ typedef void (*duckdb_replacement_callback_t)(duckdb_replacement_scan_info info,
 //! Holds an arrow query result. Must be destroyed with `duckdb_destroy_arrow`.
 typedef struct _duckdb_arrow {
 	void *internal_ptr;
-} * duckdb_arrow;
+} *duckdb_arrow;
 
 //! Holds an arrow array stream. Must be destroyed with `duckdb_destroy_arrow_stream`.
 typedef struct _duckdb_arrow_stream {
 	void *internal_ptr;
-} * duckdb_arrow_stream;
+} *duckdb_arrow_stream;
 
 //! Holds an arrow schema. Remember to release the respective ArrowSchema object.
 typedef struct _duckdb_arrow_schema {
 	void *internal_ptr;
-} * duckdb_arrow_schema;
+} *duckdb_arrow_schema;
 
 //! Holds an arrow array. Remember to release the respective ArrowArray object.
 typedef struct _duckdb_arrow_array {
 	void *internal_ptr;
-} * duckdb_arrow_array;
+} *duckdb_arrow_array;
 
 //===--------------------------------------------------------------------===//
 // DuckDB extension access
