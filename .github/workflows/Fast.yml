@@ -1,0 +1,90 @@
+name: Fast
+on:
+  workflow_dispatch:
+  repository_dispatch:
+  pull_request:
+    branches:
+      - main
+      - duckdb_devx
+
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ github.ref != 'refs/heads/main' || github.sha }}
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+jobs:
+  fast_test:
+    name: Build and Test on major platforms
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2019]
+    runs-on: ${{ matrix.os }}
+    env:
+      GEN: ninja
+      BUILD_JEMALLOC: 1
+      CORE_EXTENSIONS: "icu;tpch;tpcds;fts;json;inet"
+      DISABLE_SANITIZER: 1
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install
+      shell: bash
+      run: |
+        if [[ "${{ matrix.os }}" == ubuntu* ]]; then
+          sudo apt-get update -y -qq && sudo apt-get install -y -qq ninja-build
+        elif [[ "${{ matrix.os }}" == macos* ]]; then
+          brew install ninja
+        fi
+
+    - name: Setup Ccache
+      uses: hendrikmuhs/ccache-action@main
+      with:
+        key: ${{ github.job }}
+        save: ${{ github.ref == 'refs/heads/main' || github.repository != 'duckdb/duckdb' }}
+
+    - name: Build (Linux/macOS)
+      if: matrix.os != 'windows-2019'
+      shell: bash
+      run: GEN=ninja make release
+
+    - name: Build (Windows)
+      if: matrix.os == 'windows-2019'
+      shell: bash
+      run: |
+        python scripts/windows_ci.py
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_GENERATOR_PLATFORM=x64 -DENABLE_EXTENSION_AUTOLOADING=1 -DENABLE_EXTENSION_AUTOINSTALL=1 -DDUCKDB_EXTENSION_CONFIGS="${GITHUB_WORKSPACE}/.github/config/bundled_extensions.cmake" -DDISABLE_UNITY=1
+        cmake --build . --config Release --parallel
+
+    - name: Set DUCKDB_INSTALL_LIB for ADBC tests (Windows)
+      if: matrix.os == 'windows-2019'
+      shell: pwsh
+      run: echo "DUCKDB_INSTALL_LIB=$((Get-ChildItem -Recurse -Filter 'duckdb.dll' | Select-Object -First 1).FullName)" >> $GITHUB_ENV
+
+    - name: Set DUCKDB_INSTALL_LIB for ADBC tests (macOS)
+      if: matrix.os == 'macos-14'
+      shell: bash
+      run: echo "DUCKDB_INSTALL_LIB=$(find `pwd` -name 'libduck*.dylib' | head -n 1)" >> $GITHUB_ENV
+
+    - name: Test DUCKDB_INSTALL_LIB variable (Windows)
+      if: matrix.os == 'windows-2019'
+      shell: bash
+      run: echo $DUCKDB_INSTALL_LIB
+
+    - name: Test (Windows)
+      if: matrix.os == 'windows-2019'
+      shell: bash
+      run: test/Release/unittest.exe
+
+    - name: Test (Linux/macOS)
+      if: matrix.os != 'windows-2019'
+      shell: bash
+      run: make unittest_release
