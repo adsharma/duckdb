@@ -114,6 +114,7 @@ IGNORED_DIRECTORIES = [
     "extension/icu/third_party",
     "tools/nodejs/src/duckdb",
 ]
+IGNORED_EXTENSIONS = ["yml", "yaml"]
 
 CLANG_FORMAT = ["clang-format", "-i", "--sort-includes=0", "-style=file"]
 BLACK_FORMAT = ["black", "-q", "--skip-string-normalization", "--line-length", "120"]
@@ -143,8 +144,7 @@ FORMAT_COMMANDS = {
 def parse_args():
     parser = argparse.ArgumentParser(description="Format source code files")
     parser.add_argument(
-        "revision",
-        nargs="?",
+        "--revision",
         default="HEAD",
         help="Revision number to format all files (default: HEAD)",
     )
@@ -153,12 +153,13 @@ def parse_args():
         action="store_true",
         help="Check formatting without modifying files (default)",
     )
-    parser.add_argument("--all", action="store_true", help="Format all files")
     parser.add_argument("--fix", action="store_true", help="Fix formatting issues in files")
-    parser.add_argument("--force", action="store_true", help="Format even non-standard files")
-    parser.add_argument("--silent", action="store_true", help="Suppress output of formatted files")
-    parser.add_argument("--noconfirm", action="store_true", help="Skip confirmation prompt for fixing")
-    return parser.parse_args()
+    parser.add_argument('-a', '--all', action='store_true', help='Format all files')
+    parser.add_argument('-d', '--directories', nargs='*', default=[], help='Format specified directories')
+    parser.add_argument('-y', '--noconfirm', action='store_true', help='Skip confirmation prompt')
+    parser.add_argument('-q', '--silent', action='store_true', help='Suppress output')
+    parser.add_argument('-f', '--force', action='store_true', help='Force formatting')
+    return parser.parse_known_args()
 
 
 # File filtering
@@ -200,6 +201,8 @@ def file_is_generated(text):
 # Formatting logic
 def format_file(full_path, check_only, force, silent):
     ext = Path(full_path).suffix
+    if ext in IGNORED_EXTENSIONS:
+        return
     if ext not in FORMAT_COMMANDS:
         if not force:
             print(f"File {full_path} is not normally formatted. Use --force to format.")
@@ -263,7 +266,7 @@ def format_file(full_path, check_only, force, silent):
 
 
 def main():
-    args = parse_args()
+    args, rest = parse_args()
     check_only = args.check or not args.fix
     format_all = args.all
 
@@ -271,7 +274,7 @@ def main():
     check_formatter_version(["black", "--version"], "black", 24, '`pip install "black>=24"`')
     check_formatter_version(["cmake-format", "--version"], None, 0, "`pip install cmake-format`")
     # Collect files to format
-    files = []
+    files = rest
     if Path(args.revision).is_file():
         print(f"{'Checking' if check_only else 'Formatting'} individual file: {args.revision}")
         files = [args.revision]
@@ -282,7 +285,7 @@ def main():
         print(f"{'Checking' if check_only else 'Formatting'} all files")
         for d in FORMATTED_DIRECTORIES:
             files.extend(format_directory(d))
-    else:
+    elif not files:
         if args.revision == "main":
             subprocess.run(["git", "fetch", "origin", "main:main"], check=True)
         print(f"{'Checking' if check_only else 'Formatting'} since branch or revision: {args.revision}")
