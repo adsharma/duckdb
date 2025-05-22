@@ -5,7 +5,7 @@ on:
   pull_request:
     branches:
       - main
-      - duckdb_devx
+      - duckdb_devx*
 
 
 concurrency:
