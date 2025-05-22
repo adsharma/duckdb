@@ -24,6 +24,13 @@ public:
 	//! Returns nullptr if there are no more entries
 	unique_ptr<ParseInfo> Next();
 
+	idx_t CurrentOffset() {
+		if (reader) {
+			return reader->CurrentOffset();
+		}
+		return 0;
+	}
+
 	~WALReader();
 
 private:
