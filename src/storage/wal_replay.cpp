@@ -835,11 +835,13 @@ unique_ptr<TableDataDeleteInfo> WriteAheadLogDeserializer::ReplayDelete() {
 		throw InternalException("Corrupt WAL: delete without table");
 	}
 
-	D_ASSERT(info->chunk->ColumnCount() == 1 && info->chunk->data[0].GetType() == LogicalType::ROW_TYPE);
+	// Support both old format (1 column: ROW_TYPE) and new format (multiple columns: PRIMARY_KEY columns + ROW_TYPE)
+	D_ASSERT(info->chunk->ColumnCount() >= 1 &&
+	         info->chunk->data[info->chunk->ColumnCount() - 1].GetType() == LogicalType::ROW_TYPE);
 	row_t row_ids[1];
 	Vector row_identifiers(LogicalType::ROW_TYPE, data_ptr_cast(row_ids));
 
-	auto source_ids = FlatVector::GetData<row_t>(info->chunk->data[0]);
+	auto source_ids = FlatVector::GetData<row_t>(info->chunk->data[info->chunk->ColumnCount() - 1]);
 	// delete the tuples from the current table
 	TableDeleteState delete_state;
 	for (idx_t i = 0; i < info->chunk->size(); i++) {
