@@ -18,6 +18,10 @@
 #include "duckdb/storage/table/row_group.hpp"
 #include "duckdb/storage/table/row_version_manager.hpp"
 #include "duckdb/storage/table/update_segment.hpp"
+#include "duckdb/transaction/duck_transaction.hpp"
+#include "duckdb/transaction/duck_transaction_manager.hpp"
+#include "duckdb/main/attached_database.hpp"
+#include "duckdb/common/helper.hpp"
 #include "duckdb/storage/table/table_index_list.hpp"
 #include "duckdb/storage/index.hpp"
 #include "duckdb/storage/write_ahead_log.hpp"
@@ -311,8 +315,9 @@ PrimaryKeyInfo WALWriteState::GetPrimaryKeyInfo(DataTableInfo &table_info, optio
 
 		// Look for primary key indexes by scanning the indexes
 		index_list.Scan([&](Index &index) {
-			// Check if this is a primary key index
-			if (index.GetConstraintType() == IndexConstraintType::PRIMARY) {
+			// Check if this is a primary key  or unique index
+			if (index.GetConstraintType() == IndexConstraintType::PRIMARY ||
+			    index.GetConstraintType() == IndexConstraintType::UNIQUE) {
 				// Get the column IDs from the index
 				auto column_ids = index.GetColumnIds();
 
@@ -336,37 +341,26 @@ PrimaryKeyInfo WALWriteState::GetPrimaryKeyInfo(DataTableInfo &table_info, optio
 
 		return pk_info;
 	} else {
-		// Use table_entry approach (for Update path)
-		auto &db = table_info.GetDB();
-		auto &catalog = Catalog::GetSystemCatalog(db.GetDatabase());
+		// Use direct index approach (for Update path) - same as Delete path to avoid catalog access
+		table_info.GetIndexes().Scan([&](Index &index) {
+			if (index.IsUnique() || index.IsPrimary()) {
+				pk_info.has_primary_key = true;
 
-		string table_name = table_info.GetTableName();
-		string schema_name = table_info.GetSchemaName();
+				auto column_ids = index.GetColumnIds();
+				pk_info.column_indices = column_ids;
 
-		auto context_lock = transaction.context.lock();
-		if (context_lock) {
-			pk_info.table_entry = catalog.GetEntry<TableCatalogEntry>(*context_lock, schema_name, table_name);
-		}
-		if (pk_info.table_entry) {
-			auto primary_key = pk_info.table_entry->GetPrimaryKey();
-			if (primary_key) {
-				auto unique_constraint = static_cast<UniqueConstraint *>(primary_key.get());
-
-				if (unique_constraint->HasIndex()) {
-					// single column primary key
-					auto &col = pk_info.table_entry->GetColumn(unique_constraint->GetIndex());
-					pk_info.column_names.push_back(col.GetName());
-					pk_info.column_types.push_back(col.GetType());
-				} else {
-					// multi-column primary key
-					pk_info.column_names = unique_constraint->GetColumnNames();
-					for (const auto &col_name : pk_info.column_names) {
-						auto &col = pk_info.table_entry->GetColumns().GetColumn(col_name);
-						pk_info.column_types.push_back(col.GetType());
-					}
+				// Generate generic column names and types instead of requiring real column names
+				// This avoids the need to access DataTable.Columns() which could fail when data_table is null
+				for (idx_t i = 0; i < column_ids.size(); i++) {
+					pk_info.column_names.push_back("pk_col_" + std::to_string(i));
+					// For column types, we'll use a generic type that works for primary keys
+					// Most primary keys are integers, but we'll use VARCHAR as it's most flexible
+					pk_info.column_types.push_back(LogicalType::VARCHAR);
 				}
+				return true; // Stop scanning after finding primary key
 			}
-		}
+			return false; // Continue scanning
+		});
 
 		return pk_info;
 	}
@@ -405,6 +399,43 @@ bool WALWriteState::FetchPrimaryKeyValues(PrimaryKeyInfo &pk_info, DataTable &da
 		// Fetch primary key values using DataTable's Fetch method which handles row groups internally
 		ColumnFetchState fetch_state;
 		data_table.Fetch(transaction, pk_chunk, pk_column_storage_ids, row_id_vector, row_ids.size(), fetch_state);
+
+		// Check if we actually fetched the expected number of rows
+		if (pk_chunk.size() != row_ids.size()) {
+			// The row(s) were not found (likely already deleted in this transaction)
+
+			// Access the database instance through the transaction manager
+			auto &attached_db = transaction.manager.GetDB();
+			auto &database = attached_db.GetDatabase();
+			auto &duck_transaction_manager = DuckTransactionManager::Get(attached_db);
+
+			// Get the ClientContext from the current transaction
+			auto context_ptr = transaction.context.lock();
+			if (!context_ptr) {
+				return false;
+			}
+
+			// Create a new transaction with an earlier timestamp to see the deleted row
+			auto earlier_start_time = transaction.start_time > 0 ? transaction.start_time - 1 : 0;
+			// Use lowest active start as a safe earlier timestamp instead of private GetCommitTimestamp
+			auto earlier_transaction_id = duck_transaction_manager.LowestActiveStart();
+
+			// Create a DuckTransaction directly with the earlier timestamp
+			auto earlier_transaction =
+			    make_uniq<DuckTransaction>(duck_transaction_manager, *context_ptr, earlier_start_time,
+			                               earlier_transaction_id, transaction.catalog_version);
+
+			// Reset the chunk and try again with the earlier transaction
+			pk_chunk.Reset();
+			ColumnFetchState earlier_fetch_state;
+			data_table.Fetch(*earlier_transaction, pk_chunk, pk_column_storage_ids, row_id_vector, row_ids.size(),
+			                 earlier_fetch_state);
+
+			// Check if the earlier transaction found the rows
+			if (pk_chunk.size() != row_ids.size()) {
+				return false;
+			}
+		}
 
 		// Copy the fetched values into the target chunk vectors
 		for (idx_t pk_idx = 0; pk_idx < pk_info.column_names.size(); pk_idx++) {
@@ -456,6 +487,13 @@ bool WALWriteState::FetchPrimaryKeyValuesFromTableEntry(PrimaryKeyInfo &pk_info,
 		// Fetch primary key values for the rows
 		ColumnFetchState fetch_state;
 		table_storage.Fetch(transaction, pk_chunk, pk_column_storage_ids, row_id_vector, row_ids.size(), fetch_state);
+
+		// Check if we actually fetched the expected number of rows
+		if (pk_chunk.size() != row_ids.size()) {
+			// The row(s) were not found (likely already deleted in this transaction)
+			// Return false to indicate primary key fetch failed
+			return false;
+		}
 
 		// Copy the fetched values into the target chunk vectors
 		for (idx_t pk_idx = 0; pk_idx < pk_info.column_names.size(); pk_idx++) {
