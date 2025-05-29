@@ -24,6 +24,7 @@
 #include "duckdb/common/helper.hpp"
 #include "duckdb/storage/table/table_index_list.hpp"
 #include "duckdb/storage/index.hpp"
+#include "duckdb/storage/storage_manager.hpp"
 #include "duckdb/storage/write_ahead_log.hpp"
 #include "duckdb/transaction/append_info.hpp"
 #include "duckdb/transaction/delete_info.hpp"
@@ -182,13 +183,22 @@ void WALWriteState::WriteDelete(DeleteInfo &info) {
 	// switch to the current table, if necessary
 	SwitchTable(info.table->GetDataTableInfo().get(), UndoFlags::DELETE_TUPLE);
 
-	// get primary key information
-	auto pk_info = GetPrimaryKeyInfo(*info.table->GetDataTableInfo(), info.table);
+	// check if replication is enabled - if not, skip primary key operations
+	auto &storage_manager = transaction.manager.GetDB().GetStorageManager();
+	bool replication_enabled = storage_manager.IsReplicationEnabled();
+
+	// get primary key information only if replication is enabled
+	PrimaryKeyInfo pk_info;
+	if (replication_enabled) {
+		pk_info = GetPrimaryKeyInfo(*info.table->GetDataTableInfo(), info.table);
+	}
 
 	// prepare delete chunk types - primary key types + row_type
 	vector<LogicalType> delete_types;
-	for (const auto &pk_type : pk_info.column_types) {
-		delete_types.push_back(pk_type);
+	if (replication_enabled) {
+		for (const auto &pk_type : pk_info.column_types) {
+			delete_types.push_back(pk_type);
+		}
 	}
 	delete_types.push_back(LogicalType::ROW_TYPE);
 
@@ -221,8 +231,8 @@ void WALWriteState::WriteDelete(DeleteInfo &info) {
 
 	delete_chunk->SetCardinality(info.count);
 
-	// fetch primary key values for the deleted rows
-	if (!pk_info.column_names.empty()) {
+	// fetch primary key values for the deleted rows only if replication is enabled
+	if (replication_enabled && !pk_info.column_names.empty()) {
 		FetchPrimaryKeyValues(pk_info, *info.table, deleted_row_ids, *delete_chunk, 0);
 	}
 
@@ -236,8 +246,15 @@ void WALWriteState::WriteUpdate(UpdateInfo &info) {
 
 	SwitchTable(&table_info, UndoFlags::UPDATE_TUPLE);
 
-	// get primary key information using table_entry approach
-	auto pk_info = GetPrimaryKeyInfo(table_info, nullptr);
+	// check if replication is enabled - if not, skip primary key operations
+	auto &storage_manager = transaction.manager.GetDB().GetStorageManager();
+	bool replication_enabled = storage_manager.IsReplicationEnabled();
+
+	// get primary key information only if replication is enabled
+	PrimaryKeyInfo pk_info;
+	if (replication_enabled) {
+		pk_info = GetPrimaryKeyInfo(table_info, nullptr);
+	}
 
 	// initialize the update chunk
 	vector<LogicalType> update_types;
@@ -248,9 +265,11 @@ void WALWriteState::WriteUpdate(UpdateInfo &info) {
 	}
 	update_types.emplace_back(LogicalType::ROW_TYPE);
 
-	// add primary key column types to the update chunk
-	for (const auto &pk_type : pk_info.column_types) {
-		update_types.push_back(pk_type);
+	// add primary key column types to the update chunk only if replication is enabled
+	if (replication_enabled) {
+		for (const auto &pk_type : pk_info.column_types) {
+			update_types.push_back(pk_type);
+		}
 	}
 
 	update_chunk = make_uniq<DataChunk>();
@@ -276,8 +295,8 @@ void WALWriteState::WriteUpdate(UpdateInfo &info) {
 		}
 	}
 
-	// fetch primary key values for the updated rows
-	if (!pk_info.column_names.empty()) {
+	// fetch primary key values for the updated rows only if replication is enabled
+	if (replication_enabled && !pk_info.column_names.empty()) {
 		vector<row_t> updated_row_ids;
 		for (idx_t i = 0; i < info.N; i++) {
 			updated_row_ids.push_back(row_ids[tuples[i]]);

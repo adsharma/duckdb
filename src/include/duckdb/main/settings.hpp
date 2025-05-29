@@ -632,6 +632,17 @@ struct EnableProgressBarPrintSetting {
 	static Value GetSetting(const ClientContext &context);
 };
 
+struct EnableReplicationSetting {
+	using RETURN_TYPE = bool;
+	static constexpr const char *Name = "enable_replication";
+	static constexpr const char *Description =
+	    "Whether to enable replication features. Writes could be slower when enabled.";
+	static constexpr const char *InputType = "BOOLEAN";
+	static void SetGlobal(DatabaseInstance *db, DBConfig &config, const Value &parameter);
+	static void ResetGlobal(DatabaseInstance *db, DBConfig &config);
+	static Value GetSetting(const ClientContext &context);
+};
+
 struct EnableViewDependenciesSetting {
 	using RETURN_TYPE = bool;
 	static constexpr const char *Name = "enable_view_dependencies";

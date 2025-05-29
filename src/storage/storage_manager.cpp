@@ -92,6 +92,11 @@ bool StorageManager::InMemory() {
 	return path == IN_MEMORY_PATH;
 }
 
+bool StorageManager::IsReplicationEnabled() {
+	auto &config = GetDatabase().config;
+	return config.options.enable_replication;
+}
+
 void StorageManager::Initialize(StorageOptions options) {
 	bool in_memory = InMemory();
 	if (in_memory && read_only) {
