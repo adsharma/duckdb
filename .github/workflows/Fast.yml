@@ -30,20 +30,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
-
-    - name: Install
-      shell: bash
-      run: |
-        if [[ "${{ matrix.os }}" == ubuntu* ]]; then
-          sudo apt-get update -y -qq && sudo apt-get install -y -qq ninja-build
-        elif [[ "${{ matrix.os }}" == macos* ]]; then
-          brew install ninja
-        fi
 
     - name: Setup Ccache
       uses: hendrikmuhs/ccache-action@main
@@ -61,7 +53,7 @@ jobs:
       shell: bash
       run: |
         python scripts/windows_ci.py
-        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_GENERATOR_PLATFORM=x64 -DENABLE_EXTENSION_AUTOLOADING=1 -DENABLE_EXTENSION_AUTOINSTALL=1 -DDUCKDB_EXTENSION_CONFIGS="${GITHUB_WORKSPACE}/.github/config/bundled_extensions.cmake" -DDISABLE_UNITY=1
+        GEN=ninja cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_GENERATOR_PLATFORM=x64 -DENABLE_EXTENSION_AUTOLOADING=1 -DENABLE_EXTENSION_AUTOINSTALL=1 -DDUCKDB_EXTENSION_CONFIGS="${GITHUB_WORKSPACE}/.github/config/bundled_extensions.cmake" -DDISABLE_UNITY=1
         cmake --build . --config Release --parallel
 
     - name: Set DUCKDB_INSTALL_LIB for ADBC tests (Windows)
