@@ -20,7 +20,7 @@ jobs:
     name: Build and Test on major platforms
     strategy:
       matrix:
-        os: [ubuntu-24.04, macos-14, windows-2019]
+        os: [ubuntu-24.04, macos-14, windows-2025]
     runs-on: ${{ matrix.os }}
     env:
       GEN: ninja
@@ -52,12 +52,12 @@ jobs:
         save: ${{ github.ref == 'refs/heads/main' || github.repository != 'duckdb/duckdb' }}
 
     - name: Build (Linux/macOS)
-      if: matrix.os != 'windows-2019'
+      if: matrix.os != 'windows-2025'
       shell: bash
       run: GEN=ninja make release
 
     - name: Build (Windows)
-      if: matrix.os == 'windows-2019'
+      if: matrix.os == 'windows-2025'
       shell: bash
       run: |
         python scripts/windows_ci.py
@@ -65,7 +65,7 @@ jobs:
         cmake --build . --config Release --parallel
 
     - name: Set DUCKDB_INSTALL_LIB for ADBC tests (Windows)
-      if: matrix.os == 'windows-2019'
+      if: matrix.os == 'windows-2025'
       shell: pwsh
       run: echo "DUCKDB_INSTALL_LIB=$((Get-ChildItem -Recurse -Filter 'duckdb.dll' | Select-Object -First 1).FullName)" >> $GITHUB_ENV
 
@@ -75,16 +75,16 @@ jobs:
       run: echo "DUCKDB_INSTALL_LIB=$(find `pwd` -name 'libduck*.dylib' | head -n 1)" >> $GITHUB_ENV
 
     - name: Test DUCKDB_INSTALL_LIB variable (Windows)
-      if: matrix.os == 'windows-2019'
+      if: matrix.os == 'windows-2025'
       shell: bash
       run: echo $DUCKDB_INSTALL_LIB
 
     - name: Test (Windows)
-      if: matrix.os == 'windows-2019'
+      if: matrix.os == 'windows-2025'
       shell: bash
       run: test/Release/unittest.exe
 
     - name: Test (Linux/macOS)
-      if: matrix.os != 'windows-2019'
+      if: matrix.os != 'windows-2025'
       shell: bash
       run: make unittest_release
