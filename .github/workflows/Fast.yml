@@ -38,10 +38,17 @@ jobs:
         python-version: '3.12'
 
     - name: Setup Ccache
+      if: matrix.os != 'windows-2025'
       uses: hendrikmuhs/ccache-action@main
       with:
         key: ${{ github.job }}
         save: ${{ github.ref == 'refs/heads/main' || github.repository != 'duckdb/duckdb' }}
+
+    - name: Run sccache-cache
+      if: matrix.os == 'windows-2025'
+      uses: mozilla-actions/sccache-action@v0.0.9
+      with:
+        version: "v0.10.0"
 
     - name: Build (Linux/macOS)
       if: matrix.os != 'windows-2025'
@@ -51,9 +58,11 @@ jobs:
     - name: Build (Windows)
       if: matrix.os == 'windows-2025'
       shell: bash
+      env:
+        SCCACHE_GHA_ENABLED: "true"
       run: |
         python scripts/windows_ci.py
-        GEN=ninja cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_GENERATOR_PLATFORM=x64 -DENABLE_EXTENSION_AUTOLOADING=1 -DENABLE_EXTENSION_AUTOINSTALL=1 -DDUCKDB_EXTENSION_CONFIGS="${GITHUB_WORKSPACE}/.github/config/bundled_extensions.cmake" -DDISABLE_UNITY=1
+        GEN=ninja cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_GENERATOR_PLATFORM=x64 -DENABLE_EXTENSION_AUTOLOADING=1 -DENABLE_EXTENSION_AUTOINSTALL=1 -DDUCKDB_EXTENSION_CONFIGS="${GITHUB_WORKSPACE}/.github/config/bundled_extensions.cmake" -DDISABLE_UNITY=1 -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
         cmake --build . --config Release --parallel
 
     - name: Set DUCKDB_INSTALL_LIB for ADBC tests (Windows)

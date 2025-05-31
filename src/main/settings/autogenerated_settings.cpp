@@ -571,6 +571,22 @@ Value EnableProgressBarSetting::GetSetting(const ClientContext &context) {
 }
 
 //===----------------------------------------------------------------------===//
+// Enable Replication
+//===----------------------------------------------------------------------===//
+void EnableReplicationSetting::SetGlobal(DatabaseInstance *db, DBConfig &config, const Value &input) {
+	config.options.enable_replication = input.GetValue<bool>();
+}
+
+void EnableReplicationSetting::ResetGlobal(DatabaseInstance *db, DBConfig &config) {
+	config.options.enable_replication = DBConfig().options.enable_replication;
+}
+
+Value EnableReplicationSetting::GetSetting(const ClientContext &context) {
+	auto &config = DBConfig::GetConfig(context);
+	return Value::BOOLEAN(config.options.enable_replication);
+}
+
+//===----------------------------------------------------------------------===//
 // Enable View Dependencies
 //===----------------------------------------------------------------------===//
 void EnableViewDependenciesSetting::SetGlobal(DatabaseInstance *db, DBConfig &config, const Value &input) {

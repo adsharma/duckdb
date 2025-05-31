@@ -413,6 +413,12 @@
         "custom_implementation": true
     },
     {
+        "name": "enable_replication",
+        "description": "Whether to enable replication features. Writes could be slower when enabled.",
+        "type": "BOOLEAN",
+        "scope": "global"
+    },
+    {
         "name": "enable_view_dependencies",
         "description": "Enable created VIEWs to create dependencies on the referenced objects (such as tables)",
         "type": "BOOLEAN",

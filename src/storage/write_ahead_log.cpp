@@ -45,7 +45,7 @@ BufferedFileWriter &WriteAheadLog::Initialize() {
 	if (!writer) {
 		writer = make_uniq<BufferedFileWriter>(FileSystem::Get(database), wal_path,
 		                                       FileFlags::FILE_FLAGS_WRITE | FileFlags::FILE_FLAGS_FILE_CREATE |
-		                                           FileFlags::FILE_FLAGS_APPEND);
+		                                           FileFlags::FILE_FLAGS_APPEND | FileLockType::WRITE_LOCK);
 		if (init_state == WALInitState::UNINITIALIZED_REQUIRES_TRUNCATE) {
 			writer->Truncate(wal_size);
 		}
@@ -395,7 +395,8 @@ void WriteAheadLog::WriteRowGroupData(const PersistentCollectionData &data) {
 
 void WriteAheadLog::WriteDelete(DataChunk &chunk) {
 	D_ASSERT(chunk.size() > 0);
-	D_ASSERT(chunk.ColumnCount() == 1 && chunk.data[0].GetType() == LogicalType::ROW_TYPE);
+	// Accept chunks with 1 column (ROW_TYPE only) or multiple columns (PRIMARY_KEY columns + ROW_TYPE)
+	D_ASSERT(chunk.ColumnCount() >= 1 && chunk.data[chunk.ColumnCount() - 1].GetType() == LogicalType::ROW_TYPE);
 	chunk.Verify();
 
 	WriteAheadLogSerializer serializer(*this, WALType::DELETE_TUPLE);

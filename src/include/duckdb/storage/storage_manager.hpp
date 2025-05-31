@@ -96,6 +96,8 @@ public:
 	//! The path to the WAL, derived from the database file path
 	string GetWALPath();
 	bool InMemory();
+	//! Check if replication is enabled in the database configuration
+	bool IsReplicationEnabled();
 
 	virtual bool AutomaticCheckpoint(idx_t estimated_wal_bytes) = 0;
 	virtual unique_ptr<StorageCommitState> GenStorageCommitState(WriteAheadLog &wal) = 0;
