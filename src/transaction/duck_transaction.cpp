@@ -174,6 +174,10 @@ bool DuckTransaction::AutomaticCheckpoint(AttachedDatabase &db, const UndoBuffer
 		// WAL replay can make changes to the database - but only in the in-memory copy of the
 		return false;
 	}
+	// If replication is enabled, we cannot automatically checkpoint
+	if (db.GetDatabase().config.options.enable_replication) {
+		return false;
+	}
 	auto &storage_manager = db.GetStorageManager();
 	return storage_manager.AutomaticCheckpoint(storage->EstimatedSize() + properties.estimated_size);
 }
